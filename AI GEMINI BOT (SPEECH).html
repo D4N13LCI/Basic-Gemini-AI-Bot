@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chatbot Gemini - Audio</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f0f0f0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    #chat-container {
+      width: 400px;
+      background-color: #fff;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      height: 600px;
+    }
+
+    #chat-header {
+      background-color: #007bff;
+      color: #fff;
+      padding: 15px;
+      text-align: center;
+      font-weight: bold;
+      border-bottom: 1px solid #ddd;
+    }
+
+    #chat-messages {
+      padding: 15px;
+      overflow-y: auto;
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .message {
+      margin-bottom: 10px;
+      padding: 10px;
+      border-radius: 8px;
+      max-width: 80%;
+      word-wrap: break-word;
+    }
+
+    .user-message {
+      background-color: #DCF8C6;
+      align-self: flex-end;
+    }
+
+    .bot-message {
+      background-color: #eee;
+      align-self: flex-start;
+      animation: fadeIn 0.5s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    #chat-input {
+      padding: 15px;
+      border-top: 1px solid #ddd;
+      display: flex;
+      align-items: center; /* Centra verticalmente los elementos de entrada */
+    }
+
+    #user-input {
+      flex-grow: 1;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      outline: none;
+      margin-right: 10px; /* Espacio entre el input y el botón de grabar */
+    }
+
+    #record-button {
+      background-color: #e74c3c; /* Rojo */
+      color: #fff;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    #record-button:hover {
+      background-color: #c0392b; /* Rojo más oscuro */
+    }
+
+    #send-button {
+      background-color: #007bff;
+      color: #fff;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-left: 10px;
+      transition: background-color 0.3s ease;
+    }
+
+    #send-button:hover {
+      background-color: #0056b3;
+    }
+
+    #audio-player {
+      margin-top: 10px;
+    }
+
+    #loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+
+    .loader {
+      border: 8px solid #f3f3f3;
+      border-top: 8px solid #3498db;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      animation: spin 2s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+
+  <div id="chat-container">
+    <div id="chat-header">
+      Chatbot Gemini - Audio
+    </div>
+    <div id="chat-messages">
+    </div>
+    <div id="chat-input">
+      <input type="text" id="user-input" placeholder="Escribe tu mensaje...">
+      <button id="record-button">Grabar</button>
+      <button id="send-button">Enviar</button>
+
+    </div>
+      <audio id="audio-player" controls style="display: none;"></audio>
+  </div>
+
+  <div id="loading-overlay">
+    <div class="loader"></div>
+  </div>
+
+  <script>
+    // API Keys (IMPORTANT: Use a backend in production!)
+    const GEMINI_API_KEY = "YOUR_API_KEY"; // Reemplaza
+    const SPEECH_API_KEY = "YOUR_SPEECH_API_KEY"; // Reemplaza (si usas una API de Speech-to-Text)
+
+    const GEMINI_MODEL_NAME = "gemini-1.5-pro-latest";
+    const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL_NAME}:generateContent?key=${GEMINI_API_KEY}`;
+
+    // UI elements
+    const chatMessages = document.getElementById('chat-messages');
+    const userInput = document.getElementById('user-input');
+    const recordButton = document.getElementById('record-button');
+    const sendButton = document.getElementById('send-button');
+    const loadingOverlay = document.getElementById('loading-overlay');
+    const audioPlayer = document.getElementById('audio-player');
+
+
+    // MediaRecorder setup
+    let mediaRecorder;
+    let audioChunks = [];
+
+    // Speech-to-Text functionality (Replace with your chosen API)
+    async function transcribeAudio(audioBlob) {
+      // **IMPORTANT:** This is a placeholder. You will need to implement
+      // transcription using a service like Google Cloud Speech-to-Text,
+      // AssemblyAI, or similar.
+
+      //Example using fetch and an imaginary speech-to-text endpoint
+      // const formData = new FormData();
+      // formData.append('audio', audioBlob, 'recording.wav'); // Or .mp3 etc.
+
+      // const response = await fetch("YOUR_SPEECH_TO_TEXT_ENDPOINT", { //REPLACE
+      //   method: 'POST',
+      //   body: formData,
+      //   headers: {
+      //     'Authorization': `Bearer ${SPEECH_API_KEY}` // If required
+      //   }
+      // });
+
+      // const data = await response.json();
+      // return data.transcription; // Adjust to the response format of YOUR API
+
+
+      // Simulate a transcription for demonstration.  ***REMOVE THIS***
+      return new Promise(resolve => {
+        setTimeout(() => {
+          resolve("Simulated transcription from audio.");
+        }, 1500); // Simulate a 1.5 second delay
+      });
+    }
+
+    // Text-to-Speech functionality (Example, can be replaced)
+      async function synthesizeSpeech(text) {
+          // This is a basic example using the Web Speech API (browser-based).
+          // It has limitations. For production, consider using a more robust
+          // TTS service (like Google Cloud Text-to-Speech, Amazon Polly, etc.)
+
+          return new Promise((resolve, reject) => {
+              const utterance = new SpeechSynthesisUtterance(text);
+              utterance.onend = () => {
+                  resolve();
+              };
+              utterance.onerror = (event) => {
+                  reject(event.error); // Pass the error event to the reject function
+              };
+              speechSynthesis.speak(utterance);
+          });
+      }
+
+    // Function to display messages in the chat
+    function displayMessage(message, sender) {
+      const messageElement = document.createElement('div');
+      messageElement.classList.add('message', `${sender}-message`);
+      messageElement.textContent = message;
+      chatMessages.appendChild(messageElement);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+
+    // Function to send the prompt to the Gemini API
+    async function getGeminiResponse(prompt) {
+      loadingOverlay.style.display = "flex";
+      try {
+        const response = await fetch(GEMINI_API_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            contents: [{
+              parts: [{ text: prompt }]
+            }]
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Error de la API: ${response.status} - ${response.statusText}`);
+        }
+
+        const data = await response.json();
+
+        if (data.candidates && data.candidates.length > 0) {
+          if (data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts.length > 0) {
+            return data.candidates[0].content.parts[0].text;
+          } else {
+            return "Error: No se pudo extraer el texto de la respuesta.";
+          }
+        } else {
+          return "Error: No se recibió una respuesta válida.";
+        }
+
+      } catch (error) {
+        console.error("Error al obtener la respuesta de Gemini:", error);
+        return `Error: ${error.message}`;
+      } finally {
+        loadingOverlay.style.display = "none";
+      }
+    }
+
+
+    // Main function to handle sending messages (text or audio)
+    async function sendMessage(message) {
+      displayMessage(message, 'user'); // Display user message
+
+      const response = await getGeminiResponse(message); // Get Gemini response
+
+      displayMessage(response, 'bot'); // Display bot message
+
+      //Synthesize speech from the bot's response
+      try {
+          await synthesizeSpeech(response);
+      } catch (error) {
+          console.error("Error during speech synthesis:", error);
+          displayMessage("Error: Could not play audio response.", 'bot'); // Inform the user
+      }
+    }
+
+    // Event listeners
+    sendButton.addEventListener('click', () => {
+      const message = userInput.value.trim();
+      if (message === '') return;
+      sendMessage(message);
+      userInput.value = '';
+    });
+
+    userInput.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') {
+        const message = userInput.value.trim();
+        if (message === '') return;
+        sendMessage(message);
+        userInput.value = '';
+      }
+    });
+
+
+    recordButton.addEventListener('click', async () => {
+      if (mediaRecorder && mediaRecorder.state === "recording") {
+        mediaRecorder.stop();
+        recordButton.textContent = 'Grabar';
+        return;
+      }
+
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+        mediaRecorder = new MediaRecorder(stream);
+        audioChunks = [];
+
+        mediaRecorder.ondataavailable = event => {
+          audioChunks.push(event.data);
+        };
+
+        mediaRecorder.onstop = async () => {
+          const audioBlob = new Blob(audioChunks, { type: 'audio/wav' }); //Or other format
+          const audioUrl = URL.createObjectURL(audioBlob);
+          audioPlayer.src = audioUrl; // Set the audio source. You could also skip this if you only want to send it to the STT API
+          audioPlayer.style.display = "block"; //Show the player. You can hide it if you don't need it
+
+
+          try {
+              const transcription = await transcribeAudio(audioBlob);
+              userInput.value = transcription; //Set the transcription to the input text
+              sendMessage(transcription);
+          } catch (error) {
+              console.error("Error during transcription:", error);
+              displayMessage("Error: Could not transcribe audio.", 'bot'); // Inform the user
+          }
+        };
+
+        mediaRecorder.start();
+        recordButton.textContent = 'Detener';
+
+
+      } catch (err) {
+        console.error('Error accessing microphone:', err);
+        alert('Error accessing microphone. Please check permissions.');
+      }
+    });
+
+  </script>
+</body>
+</html>
