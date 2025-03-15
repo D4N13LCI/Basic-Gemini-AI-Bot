@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>D4N13LCI Chatbot</title>
+  <style>
+    /* Tema Oscuro */
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #121212; /* Fondo oscuro */
+      color: #fff; /* Texto blanco */
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      overflow: hidden; /* Oculta el desbordamiento del body */
+    }
+
+    #chat-container {
+      width: 400px;
+      background-color: #212121; /* Contenedor más oscuro */
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      height: 600px;
+      position: relative; /* Necesario para posicionar las animaciones */
+    }
+
+    #chat-header {
+      background-color: #37474f; /* Cabecera más oscura */
+      color: #fff;
+      padding: 15px;
+      text-align: center;
+      font-weight: bold;
+      border-bottom: 1px solid #455a64;
+    }
+
+    #chat-messages {
+      padding: 15px;
+      overflow-y: auto;
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .message {
+      margin-bottom: 10px;
+      padding: 10px;
+      border-radius: 8px;
+      max-width: 80%;
+      word-wrap: break-word;
+    }
+
+    .user-message {
+      background-color: #4CAF50; /* Verde para el usuario */
+      color: #fff;
+      align-self: flex-end;
+    }
+
+    .bot-message {
+      background-color: #607d8b; /* Gris azulado para el bot */
+      color: #fff;
+      align-self: flex-start;
+      animation: fadeIn 0.5s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    #chat-input {
+      padding: 15px;
+      border-top: 1px solid #455a64;
+      display: flex;
+    }
+
+    #user-input {
+      flex-grow: 1;
+      padding: 10px;
+      border: 1px solid #78909c;
+      border-radius: 5px;
+      outline: none;
+      background-color: #37474f;
+      color: #fff;
+    }
+
+    #send-button {
+      background-color: #009688; /* Color verde azulado */
+      color: #fff;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-left: 10px;
+      transition: background-color 0.3s ease;
+    }
+
+    #send-button:hover {
+      background-color: #00796b;
+    }
+
+    .typing-indicator {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 10px;
+      align-self: flex-start;
+    }
+
+    .typing-dot {
+      width: 8px;
+      height: 8px;
+      background-color: #999;
+      border-radius: 50%;
+      margin: 0 3px;
+      animation: typing 1s infinite;
+    }
+
+    @keyframes typing {
+      0% { opacity: 0.4; }
+      50% { opacity: 1; }
+      100% { opacity: 0.4; }
+    }
+
+    /* Estilos adicionales para mejorar la apariencia */
+    #chat-messages::-webkit-scrollbar {
+      width: 8px;
+      background-color: #37474f;
+    }
+
+    #chat-messages::-webkit-scrollbar-track {
+      background: #37474f;
+    }
+
+    #chat-messages::-webkit-scrollbar-thumb {
+      background: #546e7a;
+      border-radius: 4px;
+    }
+
+    #chat-messages::-webkit-scrollbar-thumb:hover {
+      background: #78909c;
+    }
+
+    /* Estilo de carga */
+    #loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.8); /* Fondo más oscuro */
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+
+    .loader {
+      border: 8px solid #455a64;
+      border-top: 8px solid #009688;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      animation: spin 2s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Animación de Flores */
+    .flower-animation {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1; /* Asegura que esté detrás del contenido */
+    }
+
+    .flower {
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      background-image: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6"%3E%3Cpath d="M6.643 2.934a3.946 3.946 0 0 1 6.714 0l1.478 2.55a6.392 6.392 0 0 1 1.735 1.105l2.522-.98a3.945 3.945 0 0 1 4.342 6.715l-2.29 2.543a6.392 6.392 0 0 1-.196 2.524l2.29.98a3.945 3.945 0 0 1-4.342 6.715l-2.522-.98a6.392 6.392 0 0 1-1.735 1.105l-1.478 2.55a3.946 3.946 0 0 1-6.714 0l-1.478-2.55a6.392 6.392 0 0 1-1.735-1.105l-2.522.98a3.945 3.945 0 0 1-4.342-6.715l2.29-2.543a6.392 6.392 0 0 1 .196-2.524l-2.29-.98a3.945 3.945 0 0 1 4.342-6.715l2.522.98a6.392 6.392 0 0 1 1.735-1.105l1.478-2.55Z%3C/path%3E%3C/svg%3E');
+      background-size: cover;
+      animation: fall linear infinite;
+      opacity: 0; /* Inicialmente invisible */
+    }
+
+    @keyframes fall {
+      to {
+        transform: translateY(600px); /* Altura del chat container */
+        opacity: 1;
+      }
+    }
+
+  </style>
+</head>
+<body>
+
+  <div id="chat-container">
+    <div class="flower-animation"></div>
+    <div id="chat-header">
+      Chatbot Gemini
+    </div>
+    <div id="chat-messages">
+    </div>
+    <div id="chat-input">
+      <input type="text" id="user-input" placeholder="Escribe tu mensaje...">
+      <button id="send-button">Enviar</button>
+    </div>
+  </div>
+
+  <div id="loading-overlay">
+    <div class="loader"></div>
+  </div>
+
+  <script>
+    // Reemplaza con tu clave de API de Gemini
+    const API_KEY = "AIzaSyBB809p3XVcnJoURW6vQtsiw4ub1sCXcDw"; // Reemplaza con tu API Key
+    const MODEL_NAME = "gemini-1.5-pro-latest";
+    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${API_KEY}`;
+
+    const chatMessages = document.getElementById('chat-messages');
+    const userInput = document.getElementById('user-input');
+    const sendButton = document.getElementById('send-button');
+    const loadingOverlay = document.getElementById('loading-overlay');
+    const flowerAnimation = document.querySelector('.flower-animation');
+
+    // Función para mostrar el indicador de "escribiendo..."
+    function showTypingIndicator() {
+      const typingIndicator = document.createElement('div');
+      typingIndicator.classList.add('typing-indicator');
+      typingIndicator.innerHTML = `
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+      `;
+      chatMessages.appendChild(typingIndicator);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+      return typingIndicator;
+    }
+
+    // Función para ocultar el indicador de "escribiendo..."
+    function hideTypingIndicator(typingIndicator) {
+      if (typingIndicator) {
+        typingIndicator.remove();
+      }
+    }
+
+    // Función para mostrar mensajes en el chat
+    function displayMessage(message, sender) {
+      const messageElement = document.createElement('div');
+      messageElement.classList.add('message', `${sender}-message`);
+      messageElement.textContent = message;
+      chatMessages.appendChild(messageElement);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    // Función para crear una flor
+    function createFlower() {
+      const flower = document.createElement('div');
+      flower.classList.add('flower');
+      const startPosition = Math.random() * 400; // Ancho del chat container
+      const animationDuration = Math.random() * 3 + 2; // Duración aleatoria entre 2 y 5 segundos
+      flower.style.left = `${startPosition}px`;
+      flower.style.animationDuration = `${animationDuration}s`;
+      flowerAnimation.appendChild(flower);
+
+      // Elimina la flor después de que termine la animación para evitar la acumulación
+      flower.addEventListener('animationend', () => {
+        flower.remove();
+      });
+    }
+
+
+    //Función para iniciar la animación de flores
+    function startFlowerAnimation() {
+      // Crea una flor cada 0.5 segundos
+      setInterval(createFlower, 500);
+    }
+
+    // Función para enviar la petición a la API de Gemini
+    async function getGeminiResponse(prompt) {
+      loadingOverlay.style.display = "flex";
+      try {
+        const response = await fetch(API_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            contents: [{
+              parts: [{ text: prompt }]
+            }]
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Error de la API: ${response.status} - ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        console.log("Respuesta completa de la API:", data);
+
+        if (data.candidates && data.candidates.length > 0) {
+          if (data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts.length > 0) {
+            return data.candidates[0].content.parts[0].text;
+          } else {
+            return "Error: No se pudo extraer el texto de la respuesta.";
+          }
+        } else {
+          return "Error: No se recibió una respuesta válida.";
+        }
+
+      } catch (error) {
+        console.error("Error al obtener la respuesta de Gemini:", error);
+        return `Error: ${error.message}`;
+      } finally {
+        loadingOverlay.style.display = "none";
+      }
+    }
+
+    // Función principal para manejar el envío del mensaje
+    async function sendMessage() {
+      const message = userInput.value.trim();
+      if (message === '') return;
+
+      displayMessage(message, 'user');
+
+      userInput.value = '';
+
+      const typingIndicator = showTypingIndicator();
+
+      const response = await getGeminiResponse(message);
+
+      hideTypingIndicator(typingIndicator);
+
+      displayMessage(response, 'bot');
+
+      // Inicia la animación de flores después de cada mensaje enviado
+      startFlowerAnimation();
+    }
+
+    // Event Listeners
+    sendButton.addEventListener('click', sendMessage);
+
+    userInput.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') {
+        sendMessage();
+      }
+    });
+
+  </script>
+</body>
+</html>
